@@ -9,11 +9,33 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install -r requirements.txt
-      - run: flake8 .
-      - run: pytest
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run flake8 lint
+        run: flake8 . | tee flake8-report.txt
+
+      - name: Run tests and generate report
+        run: pytest --junitxml=pytest-report.xml
+
+      - name: Upload linting results
+        uses: actions/upload-artifact@v4
+        with:
+          name: flake8-report
+          path: flake8-report.txt
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest-report.xml
