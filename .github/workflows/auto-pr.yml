@@ -7,12 +7,30 @@ on:
 jobs:
   auto-pr:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: peter-evans/create-pull-request@v6
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Pull Request
+        id: cpr
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           base: main
           branch: dev
           title: "Auto PR: dev → main"
           body: "This PR was created automatically."
+
+      - name: Save PR metadata to file
+        run: |
+          echo "PR Title: Auto PR: dev → main" > pr_metadata.txt
+          echo "PR Body: This PR was created automatically." >> pr_metadata.txt
+          echo "Source Branch: dev" >> pr_metadata.txt
+          echo "Target Branch: main" >> pr_metadata.txt
+
+      - name: Upload PR metadata as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: auto-pr-info
+          path: pr_metadata.txt
