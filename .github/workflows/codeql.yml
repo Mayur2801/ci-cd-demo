@@ -11,9 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       security-events: write
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
           languages: python
-      - uses: github/codeql-action/analyze@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+      - name: Write analysis status to file
+        run: echo "CodeQL analysis completed successfully for Python." > codeql-summary.txt
+
+      - name: Upload CodeQL summary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: codeql-analysis-summary
+          path: codeql-summary.txt
