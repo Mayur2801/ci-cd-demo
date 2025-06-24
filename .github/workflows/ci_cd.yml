@@ -1,31 +1,73 @@
-deploy:
-  if: github.ref == 'refs/heads/main' && success()
-  needs: build-test
-  runs-on: ubuntu-latest
+name: CI and Deploy
 
-  steps:
-    - name: Deploy to EC2
-      uses: appleboy/ssh-action@v0.1.7
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          USERNAME="${{ secrets.EC2_USER }}"
-          APP_DIR="/home/$USERNAME/myapp"
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [dev, main]
 
-          mkdir -p $APP_DIR
-          sudo chown $USERNAME:$USERNAME $APP_DIR
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
 
-          cd $APP_DIR
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-          if [ ! -d .git ]; then
-            git clone https://github.com/${{ github.repository }} .
-          else
-            git pull origin main
-          fi
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-          pip3 install -r requirements.txt --quiet
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
-          sudo systemctl daemon-reload
-          sudo systemctl restart my-python-app || sudo systemctl start my-python-app
+      - name: Run flake8 lint
+        run: flake8 . | tee flake8-report.txt
+
+      - name: Run tests and generate report
+        run: pytest --junitxml=pytest-report.xml || true
+
+      - name: Upload linting results
+        uses: actions/upload-artifact@v4
+        with:
+          name: flake8-report
+          path: flake8-report.txt
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report
+          path: pytest-report.xml
+
+  deploy:
+    if: github.ref == 'refs/heads/main' && success()
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            USERNAME="${{ secrets.EC2_USER }}"
+            APP_DIR="/home/$USERNAME/myapp"
+
+            mkdir -p $APP_DIR
+            sudo chown $USERNAME:$USERNAME $APP_DIR
+
+            cd $APP_DIR
+
+            if [ ! -d .git ]; then
+              git clone https://github.com/${{ github.repository }} .
+            else
+              git pull origin main
+            fi
+
+            pip3 install -r requirements.txt --quiet
+
+            sudo systemctl daemon-reload
+            sudo systemctl restart my-python-app || sudo systemctl start my-python-app
