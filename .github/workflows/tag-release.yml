@@ -13,7 +13,17 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Bump version and push tag
+        id: tag_version
         uses: anothrNick/github-tag-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           WITH_V: true
+
+      - name: Save tag to file
+        run: echo "${{ steps.tag_version.outputs.new_tag }}" > tag.txt
+
+      - name: Upload tag artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-tag
+          path: tag.txt
