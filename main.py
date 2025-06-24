@@ -1,19 +1,10 @@
-# main.py
+from flask import Flask
 
+app = Flask(__name__)
 
-def add(a, b, c):
-    return a + c + b
+@app.route('/')
+def hello():
+    return "Hello from Python!"
 
-
-def subtract(a, b):
-    return a - b
-
-
-def multiply(a, b):
-    return a * b
-
-
-def divide(a, b):
-    if b == 0:
-        raise ValueError("Cannot divide by zero")
-    return a / b
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
